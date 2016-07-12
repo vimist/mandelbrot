@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Mandlebrot</title>
+		<style type="text/css">
+			body {
+				background-color: #111;
+				text-align: center;
+				color: #EEE;
+			}
+
+			canvas {
+				background-color: #FFF;
+				margin: auto;
+				display: block;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>Mandlebrot</h1>
+		<canvas id="cvs" width="1024" height="668"></canvas>
+		<script type="text/javascript">
+			/**
+			* Generate the Mandlebrot set and render it on a canvas element
+			* @param _canvas The canvas element (as returned by document.getElementById)
+			*/
+			function Mandlebrot(_canvas) {
+				this.cvs = _canvas;
+				this.cxt = this.cvs.getContext('2d');
+
+				this.width = this.cvs.width; // Canvas width
+				this.height = this.cvs.height; // Canvas height
+
+				this.xRange = 3.5;
+				this.xLower = -2.5;
+				this.yRange = 2;
+				this.yLower = -1;
+
+				this.maxIterations = 100;
+
+				// The colour palette to use, can be as many colours as required
+				// If more than maxIterations colours have been specified, only
+				// colours up to maxIterations are used
+				this.palette = [
+					{'r': 0xE0, 'g': 0xE0, 'b': 0xE0},
+					{'r': 0xC0, 'g': 0xC0, 'b': 0xC0},
+					{'r': 0xA0, 'g': 0xA0, 'b': 0xA0},
+					{'r': 0x80, 'g': 0x80, 'b': 0x80},
+					{'r': 0x60, 'g': 0x60, 'b': 0x60},
+					{'r': 0x40, 'g': 0x40, 'b': 0x40},
+					{'r': 0x20, 'g': 0x20, 'b': 0x20},
+					{'r': 0x00, 'g': 0x00, 'b': 0x00}
+				];
+
+				this.imgData = this.cxt.createImageData(1, 1); // Global for speed
+
+				// Click handler for the canvas
+				(function(mandlebrot) {
+					mandlebrot.cvs.addEventListener('click', function(e) {
+						mandlebrot.click(e.offsetX, e.offsetY);
+					});
+				})(this);
+			}
+
+			/**
+			* Set a specific pixel on the canvas to a specific colour
+			* @param _x The X position of the pixel
+			* @param _y The Y position of the pixel
+			* @param _col The colour to se the pixel to as an object (i.e. {'r': 0x00, 'g': 0x00, 'b': 0x00})
+			*/
+			Mandlebrot.prototype.setPixel = function (_x, _y, _col) {
+				this.imgData.data[0] = _col['r'];
+				this.imgData.data[1] = _col['g'];
+				this.imgData.data[2] = _col['b'];
+				this.imgData.data[3] = 255;
+
+				this.cxt.putImageData(this.imgData, _x, _y);
+			}
+
+			/**
+			* Handles the canvas click event and repaints the canvas
+			* @param _x The X position of the click on the canvas (relative to the left of the canvas)
+			* @param _y The Y position of the click on the canvas (relative to the top of the canvas)
+			*/
+			Mandlebrot.prototype.click = function(_x, _y) {
+				this.xRange = this.xRange/2;
+				this.xLower = this.xLower+((_x/this.width)*this.xRange);
+
+				this.yRange = this.yRange/2;
+				this.yLower = this.yLower+((_y/this.height)*this.yRange);
+
+				this.generate();
+			}
+
+			/**
+			* Generate and draw the Mandlebrot set to the canvas
+			*/
+			Mandlebrot.prototype.generate = function() {
+				for(var xPixel = 0; xPixel < this.width; ++xPixel) {
+					for(var yPixel = 0; yPixel < this.height; ++yPixel) {
+						var x0 = ((xPixel/this.width)*this.xRange)+this.xLower;
+						var y0 = ((yPixel/this.height)*this.yRange)+this.yLower;
+
+						var x = 0.0;
+						var y = 0.0;
+
+						var iterations = 0;
+						while(x*x + y*y < 4 && iterations < this.maxIterations) {
+							var xTmp = x*x - y*y + x0;
+							y = 2*x*y + y0;
+							x = xTmp;
+							iterations++;
+						}
+
+						this.setPixel(xPixel, yPixel, this.palette[iterations%this.palette.length]);
+					}
+				}
+			}
+
+			var cvs = document.getElementById('cvs')
+			var mb = new Mandlebrot(cvs);
+			mb.generate();
+		</script>
+	</body>
+</html>
